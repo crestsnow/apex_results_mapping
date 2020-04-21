@@ -4,11 +4,9 @@
 #############################################################################
 
 # Last Updated by: Feng Pan
-# Last Updated on: 30 March 2020
+# Last Updated on: 21 April 2020
 # Purpose: This script is designed to extract all the results and seperate 
-#            them to soil loss, TN, and TP with comparison of different 
-#            management plans and orders of differences between each two
-#            management plans.
+#            them to soil loss, TN, and TP and then map them as tif and asc.
 # Contributors: Feng made, debug, finalized the code alone.
 
 #############################################################################
@@ -25,11 +23,12 @@
 #                         --- *.csv (results file from the main code)
 #               -------results analysis
 #                         ---- * (generated results directory with csv file name)
-#                               --- *.csv (results files will be generated)
+#                               ---- * state_county directory
+#                                    --- *.asc (results files will be generated)
+#                                    --- *.tif (results files will be generated)
 #
-# Output explanation: With this results, all the three types of model simulation
-#                       can be compared among different scenarios and the results
-#                       can be mapped with the coordinates.
+# Output explanation: all the model simulation results are updated from csv file
+#                     to tif and asc files for mapping.
 
 ##############################################################################
 ############################## IMPORT LIBRARIES ##############################
