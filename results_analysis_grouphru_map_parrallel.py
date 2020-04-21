@@ -57,19 +57,25 @@ workdir = os.path.dirname(os.path.realpath(sys.argv[0]))
 def doMapping(stcty, data, otfd):  
     
     os.chdir(otfd)    
-    stctyname = [stcty]    
+    # check if the results include this state_county name
+	stctyname = [stcty]    
     judge = data['stctyname'].isin(stctyname)
     if(judge.iloc[0,] == True):
         print(stcty)
-        try:
+        # create the state_county name directory
+		try:
             if not os.path.exists(stcty):
                 os.makedirs(stcty)
         # There are no exceptions.
         except:
             pass
-        currentdir = otfd + "\\" +stcty
-        stctydata = data[data['stctyname'].isin(stctyname)]                
-
+        # define the function working directory
+		currentdir = otfd + "\\" +stcty
+        
+		# extract the data for this state_county
+		stctydata = data[data['stctyname'].isin(stctyname)]
+		
+		# divde the data to precipitation, runoff, soilloss, TN, TP with column and row ID
         prcp = pd.concat([stctydata["Rowid_Colid"].astype(str),
                                     stctydata["Precipitation(mm/yr)"].astype(float)], 
                                     axis = 1, sort=False)
@@ -85,7 +91,9 @@ def doMapping(stcty, data, otfd):
         TP = pd.concat([stctydata["Rowid_Colid"].astype(str),
                         stctydata["Total P(kg/ha)"].astype(float)], 
                         axis = 1, sort=False)
-
+		
+		# since the hrus are grouped, I need to split the results to new rows by Row and Col ID 
+		# and copy the results to the splitted rows; also eliminate the null rows
         newprcp = pd.DataFrame(prcp['Rowid_Colid'].str.split(';').tolist(), index=prcp['Precipitation(mm/yr)']).stack()
         newprcp = newprcp.reset_index([0, 'Precipitation(mm/yr)'])
         newprcp.columns = ['Precipitation(mm/yr)', 'Rowid_Colid']
@@ -110,31 +118,38 @@ def doMapping(stcty, data, otfd):
         newTP = newTP.reset_index([0, 'Total P(kg/ha)'])
         newTP.columns = ['Total P(kg/ha)', 'Rowid_Colid']
         newTP = newTP[newTP['Total P(kg/ha)'].isnull() == False]        
-
+		
+		# change to the current directory and copy the landuse.asc here to be updated
         os.chdir(currentdir)
         # lufn = os.path.join("D:\\APEXMP\\Maumee\\landuse","lu%s.asc" %(stcty))
         lufn = os.path.join(workdir,"INPUTS\\landuse\\","lu%s.asc" %(stcty))
-        cmd1 = 'gdal_translate -of GTiff ' + lufn + ' lu.tif'
+        # convert it from ascii to GeoTIFF
+		cmd1 = 'gdal_translate -of GTiff ' + lufn + ' lu.tif'
         os.system(cmd1)
-
+		
+		#copy and make five tif for each type of result
         copyfile("lu.tif", "prcp.tif")
         copyfile("lu.tif", "runoff.tif")
         copyfile("lu.tif", "soilloss.tif")
         copyfile("lu.tif", "TN.tif")
         copyfile("lu.tif", "TP.tif")
-
+		
+		# Using gdal to open the tif as read and write
         prcptif = gdal.Open("prcp.tif", gdalconst.GA_Update)
         runofftif = gdal.Open("runoff.tif", gdalconst.GA_Update)
         soillosstif = gdal.Open("soilloss.tif", gdalconst.GA_Update)
         TNtif = gdal.Open("TN.tif", gdalconst.GA_Update)
         TPtif = gdal.Open("TP.tif", gdalconst.GA_Update)
+		# read colomn and row numbers
         cols = prcptif.RasterXSize
         rows = prcptif.RasterYSize
+		# only have 1 band
         prcptifband = prcptif.GetRasterBand(1)
         runofftifband = runofftif.GetRasterBand(1)
         soillosstifband = soillosstif.GetRasterBand(1)
         TNtifband = TNtif.GetRasterBand(1)
         TPtifband = TPtif.GetRasterBand(1)
+		# read the tif as array
         prcparray = prcptifband.ReadAsArray()
         runoffarray = runofftifband.ReadAsArray()
         soillossarray = soillosstifband.ReadAsArray()
@@ -145,13 +160,15 @@ def doMapping(stcty, data, otfd):
             for colidx in range(cols):
                 
                 rowid_colid = [(str(rowidx) +'_'+ str(colidx))]            
-
+				
+				# locate the result from the tif array by rowid and colid
                 prcpdata = newprcp[newprcp['Rowid_Colid'].isin(rowid_colid)]
                 runoffdata = newrunoff[newrunoff['Rowid_Colid'].isin(rowid_colid)]
                 soillossdata = newsoilloss[newsoilloss['Rowid_Colid'].isin(rowid_colid)]
                 TNdata = newTN[newTN['Rowid_Colid'].isin(rowid_colid)]
                 TPdata = newTP[newTP['Rowid_Colid'].isin(rowid_colid)]
-
+				
+				# only update cell with the existing results
                 if not prcpdata.empty:
                     prcpdata = prcpdata.reset_index(drop = True)
                     prcparray[rowidx,colidx] = prcpdata.at[0, "Precipitation(mm/yr)"]
@@ -178,12 +195,14 @@ def doMapping(stcty, data, otfd):
                 else:
                     TParray[rowidx,colidx] = 0.0
                 
+				# clear the data
                 del prcpdata
                 del runoffdata
                 del soillossdata
                 del TNdata
                 del TPdata
-
+		
+		# update the tif and clean cache
         prcptifband.WriteArray(prcparray)
         prcptifband.FlushCache()
         del prcparray
@@ -208,7 +227,8 @@ def doMapping(stcty, data, otfd):
         TPtifband.FlushCache()
         del TParray
         TPtif = None
-
+		
+		# convert them to asc
         cmd2 = 'gdal_translate -of AAIGrid prcp.tif prcp.asc'
         cmd3 = 'gdal_translate -of AAIGrid runoff.tif runoff.asc'
         cmd4 = 'gdal_translate -of AAIGrid soilloss.tif soilloss.asc'
@@ -219,7 +239,8 @@ def doMapping(stcty, data, otfd):
         os.system(cmd4)
         os.system(cmd5)
         os.system(cmd6)
-
+		
+		# delete the data
         del stctydata
         del prcp, 
         del runoff
@@ -237,15 +258,17 @@ def main():
     now = datetime.datetime.now()
     tstart = str(now.year) + "-" + str(now.month) + "-" + str(now.day) + "-" + str(now.hour) + "-" + str(now.minute) + "-" + str(now.second)
 
-    # Get the result state list
     stlst = []
     fnlst = []
-    resultslst = glob.glob("%s/*.csv" %(workdir+"\\RESULTS")) 
-    for sid in range(len(resultslst)):
+
+	# get all the csv results
+	resultslst = glob.glob("%s/*.csv" %(workdir+"\\RESULTS")) 
+    # get the filenames and statenames list
+	for sid in range(len(resultslst)):
         fnlst.append(os.path.split(resultslst[sid])[-1][:-4])
         stlst.append(fnlst[sid].split("_")[0])
 
-    # Get state and county list
+    # Get state_county names list
     stctys = []
     # stctys = glob.glob("%s/*.shp" %("D:\\APEXMP\\Maumee\\county"))  
     stctys = glob.glob("%s/*.shp" %(workdir+"\\INPUTS\\county"))
@@ -255,8 +278,11 @@ def main():
     # Create the the state-county dictionary with state names as keys and state_county list as values
     stctydict = {stlstkey: [stcty for stcty in stctys if stcty.startswith(stlstkey)] for stlstkey in stlst}
 
+	# loop the mapping by state
     for stidx in range(len(list(stctydict.keys()))):
-        statename = list(stctydict.keys())[stidx]
+        
+		# get the state name and the state_county name
+		statename = list(stctydict.keys())[stidx]
         stctylst = stctydict[statename]   
         # create the state folder
         try:
@@ -266,18 +292,20 @@ def main():
         except:
             pass
         
-        otfd = ""
+        # create the output directory
+		otfd = ""
         otfd = workdir+"\\results analysis\\"+fnlst[stidx]
 
-        # get all the results for state
+        # get all the results for state csv file 
         f = pd.read_csv(resultslst[stidx])
-        nodata = [-999]
+        # eliminate the nodata
+		nodata = [-999]
         data = f[f['Precipitation(mm/yr)'].isin(nodata) == False]    
-        data['stctyname'] = data[['State', 'County']].agg('_'.join, axis=1)
+        # create one new colomn of state_county names in data list for identify
+		data['stctyname'] = data[['State', 'County']].agg('_'.join, axis=1)
         
-        # for stctyidx in range(len(stctylst)):
+		# create the mp run list
         m_list = []
-
         for i in range(len(stctylst)):
             m_list.append((stctylst[i], data, otfd))  
             # doMapping(stctylst[i], data, otfd)
