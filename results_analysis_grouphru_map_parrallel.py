@@ -112,8 +112,8 @@ def doMapping(stcty, data, otfd):
         newTP = newTP[newTP['Total P(kg/ha)'].isnull() == False]        
 
         os.chdir(currentdir)
-        lufn = os.path.join("D:\\APEXMP\\Maumee\\landuse","lu%s.asc" %(stcty))
-        # lufn = os.path.join(workdir,"INPUTS\\landuse\\","lu%s.asc" %(stcty))
+        # lufn = os.path.join("D:\\APEXMP\\Maumee\\landuse","lu%s.asc" %(stcty))
+        lufn = os.path.join(workdir,"INPUTS\\landuse\\","lu%s.asc" %(stcty))
         cmd1 = 'gdal_translate -of GTiff ' + lufn + ' lu.tif'
         os.system(cmd1)
 
