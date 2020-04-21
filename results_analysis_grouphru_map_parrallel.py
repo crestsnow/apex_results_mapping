@@ -58,24 +58,24 @@ def doMapping(stcty, data, otfd):
     
     os.chdir(otfd)    
     # check if the results include this state_county name
-	stctyname = [stcty]    
+    stctyname = [stcty]    
     judge = data['stctyname'].isin(stctyname)
     if(judge.iloc[0,] == True):
         print(stcty)
         # create the state_county name directory
-		try:
+        try:
             if not os.path.exists(stcty):
                 os.makedirs(stcty)
         # There are no exceptions.
         except:
             pass
         # define the function working directory
-		currentdir = otfd + "\\" +stcty
+        currentdir = otfd + "/" +stcty
         
-		# extract the data for this state_county
-		stctydata = data[data['stctyname'].isin(stctyname)]
+        # extract the data for this state_county
+        stctydata = data[data['stctyname'].isin(stctyname)]
 		
-		# divde the data to precipitation, runoff, soilloss, TN, TP with column and row ID
+        # divde the data to precipitation, runoff, soilloss, TN, TP with column and row ID
         prcp = pd.concat([stctydata["Rowid_Colid"].astype(str),
                                     stctydata["Precipitation(mm/yr)"].astype(float)], 
                                     axis = 1, sort=False)
@@ -121,10 +121,10 @@ def doMapping(stcty, data, otfd):
 		
 		# change to the current directory and copy the landuse.asc here to be updated
         os.chdir(currentdir)
-        # lufn = os.path.join("D:\\APEXMP\\Maumee\\landuse","lu%s.asc" %(stcty))
-        lufn = os.path.join(workdir,"INPUTS\\landuse\\","lu%s.asc" %(stcty))
+        # lufn = os.path.join("D:/APEXMP/Maumee/landuse","lu%s.asc" %(stcty))
+        lufn = os.path.join(workdir,"INPUTS/landuse/","lu%s.asc" %(stcty))
         # convert it from ascii to GeoTIFF
-		cmd1 = 'gdal_translate -of GTiff ' + lufn + ' lu.tif'
+        cmd1 = 'gdal_translate -of GTiff ' + lufn + ' lu.tif'
         os.system(cmd1)
 		
 		#copy and make five tif for each type of result
@@ -262,16 +262,17 @@ def main():
     fnlst = []
 
 	# get all the csv results
-	resultslst = glob.glob("%s/*.csv" %(workdir+"\\RESULTS")) 
+    resultslst = glob.glob("%s/*.csv" %(workdir+"/RESULTS"))
     # get the filenames and statenames list
-	for sid in range(len(resultslst)):
+    for sid in range(len(resultslst)):
         fnlst.append(os.path.split(resultslst[sid])[-1][:-4])
         stlst.append(fnlst[sid].split("_")[0])
 
     # Get state_county names list
     stctys = []
-    # stctys = glob.glob("%s/*.shp" %("D:\\APEXMP\\Maumee\\county"))  
-    stctys = glob.glob("%s/*.shp" %(workdir+"\\INPUTS\\county"))
+    # stctys = glob.glob("%s/*.shp" %("D:/APEXMP/Maumee/county"))  
+    stctys = glob.glob("%s/*.shp" %(workdir+"/INPUTS/county"))
+    print(stctys)
     for cid in range(len(stctys)):
         stctys[cid] = os.path.split(stctys[cid])[-1][:-4]
 
@@ -281,36 +282,40 @@ def main():
 	# loop the mapping by state
     for stidx in range(len(list(stctydict.keys()))):
         
-		# get the state name and the state_county name
-		statename = list(stctydict.keys())[stidx]
+        # get the state name and the state_county name
+        statename = list(stctydict.keys())[stidx]
         stctylst = stctydict[statename]   
         # create the state folder
         try:
-            if not os.path.exists(workdir+"\\results analysis\\"+fnlst[stidx]):
-                os.makedirs(workdir+"\\results analysis\\"+fnlst[stidx])
+            if not os.path.exists(workdir+"/results analysis/"+fnlst[stidx]):
+                os.makedirs(workdir+"/results analysis/"+fnlst[stidx])
         # There are no exceptions.
         except:
             pass
         
         # create the output directory
-		otfd = ""
-        otfd = workdir+"\\results analysis\\"+fnlst[stidx]
+        otfd = ""
+        otfd = workdir+"/results analysis/"+fnlst[stidx]
 
         # get all the results for state csv file 
         f = pd.read_csv(resultslst[stidx])
         # eliminate the nodata
-		nodata = [-999]
+        nodata = [-999]
         data = f[f['Precipitation(mm/yr)'].isin(nodata) == False]    
         # create one new colomn of state_county names in data list for identify
-		data['stctyname'] = data[['State', 'County']].agg('_'.join, axis=1)
+        data['stctyname'] = data[['State', 'County']].agg('_'.join, axis=1)
         
 		# create the mp run list
         m_list = []
         for i in range(len(stctylst)):
-            m_list.append((stctylst[i], data, otfd))  
+            m_list.append((stctylst[i], data, otfd)) 
+            print(stctylst[i])
+            print(data)
+            print(otfd) 
             # doMapping(stctylst[i], data, otfd)
         
         # Clear the terminal output.
+        sys.exit()
         print("\n\r" * 30)
 
         # Determine a suitable number of cores to use.
