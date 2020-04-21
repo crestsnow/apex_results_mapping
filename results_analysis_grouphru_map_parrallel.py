@@ -247,8 +247,8 @@ def main():
 
     # Get state and county list
     stctys = []
-    stctys = glob.glob("%s/*.shp" %("D:\\APEXMP\\Maumee\\county"))  
-    # stctys = glob.glob("%s/*.shp" %(workdir+"\\INPUTS\\county"))
+    # stctys = glob.glob("%s/*.shp" %("D:\\APEXMP\\Maumee\\county"))  
+    stctys = glob.glob("%s/*.shp" %(workdir+"\\INPUTS\\county"))
     for cid in range(len(stctys)):
         stctys[cid] = os.path.split(stctys[cid])[-1][:-4]
 
