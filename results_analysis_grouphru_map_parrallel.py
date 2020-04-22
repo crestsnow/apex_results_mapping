@@ -60,7 +60,10 @@ def doMapping(stcty, data, otfd):
     # check if the results include this state_county name
     stctyname = [stcty]    
     judge = data['stctyname'].isin(stctyname)
-    if(judge.iloc[0,] == True):
+    judge = judge[judge.astype(str).str.contains('True')]
+
+    if not judge.empty:
+    # if(True == True):
         print(stcty)
         # create the state_county name directory
         try:
@@ -272,7 +275,7 @@ def main():
     stctys = []
     # stctys = glob.glob("%s/*.shp" %("D:/APEXMP/Maumee/county"))  
     stctys = glob.glob("%s/*.shp" %(workdir+"/INPUTS/county"))
-    print(stctys)
+
     for cid in range(len(stctys)):
         stctys[cid] = os.path.split(stctys[cid])[-1][:-4]
 
@@ -309,13 +312,10 @@ def main():
         m_list = []
         for i in range(len(stctylst)):
             m_list.append((stctylst[i], data, otfd)) 
-            print(stctylst[i])
-            print(data)
-            print(otfd) 
             # doMapping(stctylst[i], data, otfd)
         
         # Clear the terminal output.
-        sys.exit()
+        # sys.exit()
         print("\n\r" * 30)
 
         # Determine a suitable number of cores to use.
